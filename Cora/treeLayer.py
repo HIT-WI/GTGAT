@@ -12,8 +12,10 @@ class RecursiverLayer(nn.Module):
         self.num_class = num_class
         self.weight_dict = weight_dict
         self.GRU = nn.GRUCell(feat_dim,feat_dim)
-        self.a = nn.Parameter(torch.zeros(size=(2 * feat_dim, 1)))
-        nn.init.xavier_uniform_(self.a.data, gain=1.414)
+        #self.a = nn.Parameter(torch.zeros(size=(2 * feat_dim, 1)))
+        #nn.init.xavier_uniform_(self.a.data, gain=1.414)
+        self.V = nn.Parameter(torch.zeros(size=(feat_dim,num_class)))
+        nn.init.xavier_normal_(self.V.data,gain=1.414)
         self.alpha = alpha
         self.leakyrelu = nn.LeakyReLU(self.alpha)
     def forward(self,inputs,adj):
@@ -36,7 +38,7 @@ class RecursiverLayer(nn.Module):
                 x_2 = inputs[node2_idx, :].reshape(1, -1)
                 temp_out = self.GRU(x_2, x_1)
             else:
-                count = 0
+                count = 10000
                 temp_dict = {}
                 neighbor_list = sortNodes(neighbor_dict)
                 node1_idx = neighbor_list[0]
@@ -49,7 +51,7 @@ class RecursiverLayer(nn.Module):
                 value = neighbor_dict[node1_idx] + neighbor_dict[node2_idx]
                 temp_neighbor_dict[count] = value
                 count += 1
-                while len(temp_neighbor_dict) < 2:
+                while len(temp_neighbor_dict) > 1:
                     temp_neighbor_list = sortNodes(temp_neighbor_dict)
                     node1_idx = temp_neighbor_list[0]
                     node2_idx = temp_neighbor_list[1]
@@ -72,10 +74,13 @@ class RecursiverLayer(nn.Module):
         outs = torch.zeros_like(inputs)
         for idx, value in temp_outs.items():
             outs[idx, :] = temp_outs[idx]
+
         N = outs.shape[0]
         a_input = torch.cat([outs.repeat(1, N).view(N * N, -1), outs.repeat(N, 1)], dim=1).view(N, -1, 2 * self.feat_dim)
         e = self.leakyrelu(torch.matmul(a_input, self.a).squeeze(2))
         zero_vec = -9e15 * torch.ones_like(e)
         attention = torch.where(adj > 0, e, zero_vec)
         attention = F.softmax(attention, dim=1)
+
+
         return attention

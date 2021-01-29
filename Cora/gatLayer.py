@@ -13,9 +13,9 @@ class GraphAttentionLayer(nn.Module):
         # 压缩数据的参数
         # 注意：这里扩展了隐层的编码向量，前一半作为表示，后一半作为其的置信度向量
         self.W = nn.Parameter(torch.zeros(size=(feat_dim, hidden_dim)))
-        nn.init.xavier_uniform_(self.W.data, gain=1.414)
+        nn.init.xavier_uniform_(self.W.data, gain=0.1414)
         self.a = nn.Parameter(torch.zeros(size=(2*hidden_dim, 1)))
-        nn.init.xavier_uniform_(self.a.data, gain=1.414)
+        nn.init.xavier_uniform_(self.a.data, gain=0.1414)
         self.leakyrelu = nn.LeakyReLU(self.alpha)
         # 增加控制attention的参数
         self.beta = nn.Parameter(torch.zeros(size=[1,1]))
